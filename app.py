@@ -102,4 +102,4 @@ if uploaded_file is not None:
 
 
     st.image(img, caption="Uploaded Image", use_column_width=True)
-    st.write(f'Predicted Allergens:{pred_allergen_title}\nPredicted Allergies:{pred_allergy_title}')
+    st.write(f'Predicted Allergens:\n{pred_allergen_title}\n\nPredicted Allergies:\n{pred_allergy_title}')
