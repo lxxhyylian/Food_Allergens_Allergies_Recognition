@@ -11,7 +11,6 @@ for requirement in requirements:
 
 import torch
 from skimage.io import imread as imread
-from sklearn.utils import resample
 from torchvision import transforms
 from PIL import Image
 import numpy as np
@@ -19,10 +18,18 @@ import torch.nn as nn
 import torch.nn.functional as F
 import torchvision.models as models
 
+
+with open('./data/allergens.txt', 'r') as file:
+    allergens = [line.strip() for line in file]
 with open('./data/allergies.txt', 'r') as file:
     allergies = [line.strip() for line in file]
+
+import torch.nn as nn
+import torch.nn.functional as F
+from torchvision import models
+
 class FineTunedDenseNet(nn.Module):
-    def __init__(self, num_classes=len(allergies)):
+    def __init__(self, num_classes=len(allergens)):
         super(FineTunedDenseNet, self).__init__()
         densenet = models.densenet121(pretrained=True)
         self.features = densenet.features
@@ -42,31 +49,58 @@ class FineTunedDenseNet(nn.Module):
         x = self.fc(x)
         return x
 
-def Model():
-    return FineTunedDenseNet()
+class AllergenModel(FineTunedDenseNet):
+    def __init__(self, num_classes=len(allergens)):
+        super(AllergenModel, self).__init__(num_classes=num_classes)
 
-model = Model()
-model.load_state_dict(torch.load('./FineTunedDenseNet_allergies_model.pth', map_location='cpu'))
-model.cpu()
-model.eval()
+class AllergyModel(FineTunedDenseNet):
+    def __init__(self, num_classes=len(allergies)):
+        super(AllergyModel, self).__init__(num_classes=num_classes)
+
+allergen_model = AllergenModel()
+allergy_model = AllergyModel()
+
+allergen_model.load_state_dict(torch.load('./FineTunedDenseNet_allergens_model_1e-4', map_location='cpu'))
+allergy_model.load_state_dict(torch.load('./FineTunedDenseNet_allergies_model.pth', map_location='cpu'))
+allergen_model.cpu()
+allergy_model.cpu()
+
+class CombinedModel(nn.Module):
+    def __init__(self, allergen_model, allergy_model):
+        super(CombinedModel, self).__init__()
+        self.allergen_model = allergen_model
+        self.allergy_model = allergy_model
+
+    def forward(self, x):
+        allergen_output = self.allergen_model(x)
+        allergy_output = self.allergy_model(x)
+        return allergen_output, allergy_output
+
+combined_model = CombinedModel(allergen_model, allergy_model)
 
 transform = transforms.Compose([
     transforms.Resize((224, 224)),
     transforms.ToTensor(),
 ])
 
-st.title("lxhyylian-Food Allergies Recognition")
+st.title("lxhyylian-Food Allergens and Allergies Recognition")
 uploaded_file = st.file_uploader("Choose an image...", type=["jpg", "jpeg", "png"])
 
 if uploaded_file is not None:
     img = Image.open(uploaded_file)
     img_tensor = transform(img).unsqueeze(0)
-
+    threshold = 0.5
+    combined_model.eval()
     with torch.no_grad():
-        output = model(img_tensor)
-        pred_title = ', '.join(['{} ({:2.1f}%)'.format(allergies[j], 100 * torch.sigmoid(output[0, j]).item())
-                            for j, v in enumerate(output.squeeze())
-                            if torch.sigmoid(v) > 0.5])
+        allergen_output, allergy_output = combined_model(img_tensor)
+
+    pred_allergen_title = ', '.join(['{} ({:2.1f}%)'.format(allergens[j], 100 * torch.sigmoid(allergen_output[0, j]).item())
+                            for j, v in enumerate(allergen_output.squeeze())
+                            if torch.sigmoid(v) > threshold])
+    pred_allergy_title = ', '.join(['{} ({:2.1f}%)'.format(allergies[j], 100 * torch.sigmoid(allergy_output[0, j]).item())
+                            for j, v in enumerate(allergy_output.squeeze())
+                            if torch.sigmoid(v) > threshold])
+
 
     st.image(img, caption="Uploaded Image", use_column_width=True)
-    st.write("Predicted allergies in food: ", pred_title)
+    st.write(f'Predicted Allergens:{pred_allergen_title}\nPredicted Allergies:{pred_allergy_title}')
