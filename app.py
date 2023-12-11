@@ -59,7 +59,7 @@ class AllergyModel(FineTunedDenseNet):
 allergen_model = AllergenModel()
 allergy_model = AllergyModel()
 
-allergen_model.load_state_dict(torch.load('./FineTunedDenseNet_allergens_model_1e-4', map_location='cpu'))
+allergen_model.load_state_dict(torch.load('./FineTunedDenseNet_allergens_model_1e-4.pth', map_location='cpu'))
 allergy_model.load_state_dict(torch.load('./FineTunedDenseNet_allergies_model.pth', map_location='cpu'))
 allergen_model.cpu()
 allergy_model.cpu()
