@@ -1,0 +1,33 @@
+sugar
+apple
+butter
+lemon
+honey
+sweet pepper
+parsley
+eggs
+shallot
+spinach
+milk
+soybean
+carrot
+garlic
+onion
+cheese
+lettuce 
+almond
+tomato
+lime
+avocado
+peas
+chicken
+sweet potato
+potato
+celery
+rice
+cherry
+salmon
+cabbage
+duck
+orange
+strawberry
