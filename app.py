@@ -13,7 +13,6 @@ import torch
 from skimage.io import imread as imread
 from torchvision import transforms
 from PIL import Image
-import numpy as np
 import torch.nn as nn
 import torch.nn.functional as F
 import torchvision.models as models
